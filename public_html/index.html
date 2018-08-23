@@ -1,0 +1,386 @@
+<html>
+
+    <head>
+        <title>minimal demo</title>
+        <script src="listadoDeAutos.js" type="text/javascript"></script>
+        <!-- CSS goes here -->
+        <style>
+            body {
+                background-color: #FFF; /* example... */
+            }
+        </style>
+
+        <!-- import convnetjs library -->
+        <script src="https://cs.stanford.edu/people/karpathy/convnetjs/build/convnet-min.js"></script>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
+
+        <script type="text/javascript">
+            var net = null;
+            function start() {
+
+                var mediaDeAciertos = [];
+
+                //Array bidimensional con los autos y cada uno de sus atributos parseados en numeros
+                var autos = dameLosAutos();
+
+                //Del total del conjunto de datos, usaremos un 85% para entrenamiento y 15% para pruebas
+                var autosEntrenamiento = autos.slice(0, 1468);
+                var autosPrueba = autos.slice(1468, 1729);
+
+                net = declararRN();
+                var trainer = declararAprendizajeRN(net);
+
+
+                var x = document.createElement("H3");
+                var t = document.createTextNode("Red neuronal sin entrenar");
+                x.appendChild(t);
+                document.getElementById("texto").appendChild(x);
+
+                mediaDeAciertos.push(probarRN(net, autosPrueba, mediaDeAciertos));
+                var x = document.createElement("BR");
+                document.body.appendChild(x);
+                var x = document.createElement("BR");
+                document.getElementById("texto").appendChild(x);
+                
+                var iteraciones = document.getElementById("iteraciones").value;
+
+                for (j = 0; j < iteraciones; j++) {
+                    console.log("ITERACION NUMERO " + j);
+
+                    var num = j + 1;
+                    var x = document.createElement("H5");
+                    var t = document.createTextNode("ITERACION NUMERO " + num);
+                    x.appendChild(t);
+                    document.getElementById("texto").appendChild(x);
+
+                    entrenarRN(trainer, autosEntrenamiento);
+                    mediaDeAciertos.push(probarRN(net, autosPrueba, mediaDeAciertos));
+
+                }
+                graficar(mediaDeAciertos);
+                document.getElementById("procesarbtn").disabled = false;
+                document.getElementById("entrenar").disabled = true;
+            }
+
+
+
+            function declararRN() {
+                //DECLARACION DE LA RED NEURONAL               
+                var layer_defs = [];
+                // input layer of size 1x1x6
+                layer_defs.push({type: 'input', out_sx: 1, out_sy: 1, out_depth: 6});
+                // some fully connected layers
+                layer_defs.push({type: 'fc', num_neurons: 20, activation: 'relu'});
+                layer_defs.push({type: 'fc', num_neurons: 20, activation: 'relu'});
+
+                layer_defs.push({type: 'softmax', num_classes: 4});
+
+                net = new convnetjs.Net();
+                net.makeLayers(layer_defs);
+                return net;
+            }
+
+            function declararAprendizajeRN(net) {
+                //Tasa de aprendizaje                
+                var trainer = new convnetjs.Trainer(net, {method: 'adadelta', l2_decay: 0.001,
+                    batch_size: 10});
+                return trainer;
+            }
+
+            function entrenarRN(trainer, autosEntrenamiento) {
+                for (var auto of autosEntrenamiento) {
+                    var aux = new convnetjs.Vol(auto.slice(0, 6));
+                    trainer.train(aux, auto[6]);
+                }
+            }
+
+            function probarRN(net, autosPrueba) {
+                var promedio = 0;
+                var i = 0;
+                for (var auto of autosPrueba) {
+                    var aux = new convnetjs.Vol(auto.slice(0, 6));
+                    var result = net.forward(aux);
+                    var opcionCorrecta = auto[6];
+                    promedio += result.w[opcionCorrecta];
+                    i++;
+                }
+
+                console.log("Media de acierto: " + promedio / i);
+                var x = document.createElement("P");
+                var t = document.createTextNode("Media de acierto:      " + promedio / i);
+                x.appendChild(t);
+                document.getElementById("texto").appendChild(x);
+                return promedio / i;
+            }
+
+            function ClonMugriento(auto) {
+                for (i = 0; i < auto.length; i++) {
+
+                    switch (auto[0]) {
+                        case "vhigh":
+                            auto[0] = 4;
+                            break;
+                        case "high":
+                            auto[0] = 3;
+                            break;
+                        case "med":
+                            auto[0] = 2;
+                            break;
+                        case "low":
+                            auto[0] = 1;
+                            break;
+                    }
+
+                    switch (auto[1]) {
+                        case "vhigh":
+                            auto[1] = 4;
+                            break;
+                        case "high":
+                            auto[1] = 3;
+                            break;
+                        case "med":
+                            auto[1] = 2;
+                            break;
+                        case "low":
+                            auto[1] = 1;
+                            break;
+                    }
+
+
+                    switch (auto[2]) {
+                        case "5more":
+                            auto[2] = 4;
+                            break;
+                        case 4:
+                            auto[2] = 3;
+                            break;
+                        case 3:
+                            auto[2] = 2;
+                            break;
+                        case 2:
+                            auto[2] = 1;
+                            break;
+                    }
+
+
+                    switch (auto[3]) {
+                        case "more":
+                            auto[3] = 3;
+                            break;
+                        case 4:
+                            auto[3] = 2;
+                            break;
+                        case 2:
+                            auto[4] = 1;
+                            break;
+                    }
+
+
+                    switch (auto[4]) {
+                        case "big":
+                            auto[4] = 3;
+                            break;
+                        case "med":
+                            auto[4] = 2;
+                            break;
+                        case "small":
+                            auto[4] = 1;
+                            break;
+                    }
+
+                    switch (auto[5]) {
+                        case "high":
+                            auto[5] = 3;
+                            break;
+                        case "med":
+                            auto[5] = 2;
+                            break;
+                        case "low":
+                            auto[5] = 1;
+                            break;
+                    }
+
+                    switch (auto[6]) {
+                        case "vgood":
+                            auto[6] = 3;
+                            break;
+                        case "good":
+                            auto[6] = 2;
+                            break;
+                        case "acc":
+                            auto[6] = 1;
+                            break;
+                        case "unacc":
+                            auto[6] = 0;
+                            break;
+                    }
+                }
+
+                return auto;
+            }
+
+            function graficar(mediaDeAciertos) {
+                var trace1 = {
+                    //x: [1, 2, 3, 4],
+                    y: mediaDeAciertos,
+                    type: 'scatter'
+                };
+
+                var data = [trace1];
+
+                var layout = {
+                    title: 'Media de acierto',
+                    xaxis: {
+                        title: 'Iteracion',
+                        showgrid: false,
+                        zeroline: false
+                    },
+                    yaxis: {
+                        title: 'Promedio del porcentaje de acierto',
+                        showline: false
+                    }
+                };
+
+                Plotly.newPlot('myDiv', data, layout);
+            }
+
+            function probarDatosPersonalizados() {
+                var compra = document.getElementById("compra").value;
+                var mantenimiento = document.getElementById("mantenimiento").value;
+                var puertas = document.getElementById("puertas").value;
+                var personas = document.getElementById("personas").value;
+                var baul = document.getElementById("baul").value;
+                var seguridad = document.getElementById("seguridad").value;
+
+                var auto = [compra, mantenimiento, puertas, personas, baul, seguridad];
+
+                auto = ClonMugriento(auto);
+                auto = auto.slice(0, 6)
+                var aux = new convnetjs.Vol(auto);
+                var result = net.forward(aux);
+                graficarPieChart(result);
+            }
+
+            function graficarPieChart(result) {
+                var ctx = document.getElementById('myChart').getContext('2d');
+                var chart = new Chart(ctx, {
+                    // The type of chart we want to create
+                    type: 'pie',
+
+                    // The data for our dataset
+                    data: {
+                        labels: ["Inaceptable", "Aceptable", "Bueno", "Muy bueno"],
+                        datasets: [{
+                                label: "Resultado",
+                                backgroundColor: [
+                                    '#ff7d04',
+                                    '#fffb04',
+                                    '#fb04ff',
+                                    '#0408ff'
+                                ],
+                                 borderColor: [
+                                    '#ff7d04',
+                                    '#fffb04',
+                                    '#fb04ff',
+                                    '#0408ff'
+                                ],
+                                data: [result.w[0], result.w[1], result.w[2], result.w[3]]
+                            }]
+                    },
+
+                    // Configuration options go here
+                    options: {}
+                });
+            }
+
+        </script>
+    </head>
+
+    <body>
+        <div align="center">
+            <img src="ConvNetJS.PNG" alt=""/>
+
+            <div class="container">
+                <div class="row">
+                    <div class="col">
+                        <div id="egdiv"></div>
+                        <H1>Entrenar red neuronal</H1>
+                        <button type="button" id="entrenar" onclick="start()">Entrenar!</button>
+                        <p>Cantidad de iteraciones de entrenamiento</p>
+                        <input type="number" id="iteraciones" value="50">
+                        <br>
+                        <br>
+                        <div id="myDiv"></div>
+                        <br>
+
+                        <p id="texto"></p>
+                    </div>
+                    <div class="col">
+                        <h1>Probar la red neuronal</h1>     
+                        <form>                
+                            <h5>Datos del auto</h5>
+                            <div class="form-group">
+                                <label for="exampleFormControlSelect1">Valor de compra</label>
+                                <select class="form-control" id="compra">
+                                    <option value="vhigh">Muy alto</option>
+                                    <option value="high">Alto</option>
+                                    <option value="med">Medio</option>
+                                    <option value="low">Bajo</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="exampleFormControlSelect1">Valor de mantenimiento</label>
+                                <select class="form-control" id="mantenimiento">
+                                    <option value="vhigh">Muy alto</option>
+                                    <option value="high">Alto</option>
+                                    <option value="med">Medio</option>
+                                    <option value="low">Bajo</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="exampleFormControlSelect1">Cantidad de puertas</label>
+                                <select class="form-control" id="puertas">                                    
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5more">5 o más</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="exampleFormControlSelect1">Cantidad de personas</label>
+                                <select class="form-control" id="personas"> 
+                                    <option value="2">2</option>
+                                    <option value="4">4</option>
+                                    <option value="more">más</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="exampleFormControlSelect1">Tamano del baul</label>
+                                <select class="form-control" id="baul">
+                                    <option value="small">Chico</option>
+                                    <option value="med">Mediano</option>
+                                    <option value="big">Grande</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="exampleFormControlSelect1">Seguridad</label>
+                                <select class="form-control" id="seguridad">
+                                    <option value="low">Baja</option>
+                                    <option value="med">Media</option>
+                                    <option value="high">Alta</option>
+                                </select>
+                            </div>
+
+                        </form>
+                        <button  disabled id="procesarbtn" class="btn btn-primary" onclick="probarDatosPersonalizados()" >Procesar</button>
+
+                            <canvas id="myChart"></canvas>
+                    </div>
+                </div>
+
+
+            </div>
+    </body>
+</html>
